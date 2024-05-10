@@ -1,70 +1,67 @@
-using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
 using EzySlice;
-using UnityEngine.InputSystem;
+using UnityEngine;
 using TMPro;
 
 public class SliceObject : MonoBehaviour
 {
-    public Transform startSlicePoint;
-    public Transform endSlicePoint;
+    public Transform         startSlicePoint;
+    public Transform         endSlicePoint;
     public VelocityEstimator velocityEstimator;
-    public LayerMask sliceableLayer;
+    public LayerMask         canSlice;
 
-    public Material crossSectionMaterial;
-    public float cutForce = 2000;
+    public Material        crossSectionMaterial;
+    public float           cutForce = 2000;
     public TextMeshProUGUI score;
-    public int scoreValue = 0;
+    public int             scoreValue;
 
-    public AudioClip clip;
+    public  AudioClip   clip;
     private AudioSource source;
 
-    // Start is called before the first frame update
-    void Start()
+    private void Start()
     {
         source = GetComponent<AudioSource>();
     }
 
-    // Update is called once per frame
-    private void FixedUpdate() 
+    private void FixedUpdate()
     {
-        bool hasHit = Physics.Linecast(startSlicePoint.position, endSlicePoint.position, out RaycastHit hit, sliceableLayer);
+        var hasHit = Physics.Linecast(startSlicePoint.position, endSlicePoint.position, out var hit, canSlice);
 
-        if(hasHit)
-        {
-            GameObject target = hit.transform.gameObject;
-            Slice(target);
-        }
+        if (!hasHit)
+            return;
+
+        var target = hit.transform.gameObject;
+
+        Slice(target);
     }
 
-    public void Slice(GameObject target)
+    private void Slice(GameObject target)
     {
-        Vector3 velocity = velocityEstimator.GetVelocityEstimate();
-        Vector3 planeNormal = Vector3.Cross(endSlicePoint.position - startSlicePoint.position, velocity);
+        var velocity    = velocityEstimator.GetVelocityEstimate();
+        var planeNormal = Vector3.Cross(endSlicePoint.position - startSlicePoint.position, velocity);
         planeNormal.Normalize();
 
-        SlicedHull hull = target.Slice(endSlicePoint.position, planeNormal);
+        var hull = target.Slice(endSlicePoint.position, planeNormal);
 
-        if(hull != null)
-        {
-            GameObject upperHull = hull.CreateUpperHull(target, crossSectionMaterial);
-            SetupSliceComponent(upperHull);
+        if (hull == null)
+            return;
 
-            GameObject lowerHull = hull.CreateLowerHull(target, crossSectionMaterial);
-            SetupSliceComponent(lowerHull);
+        var upperHull = hull.CreateUpperHull(target, crossSectionMaterial);
+        var lowerHull = hull.CreateLowerHull(target, crossSectionMaterial);
 
-            Destroy(target);
-            scoreValue++;
-            score.text = "score = " + scoreValue.ToString();
-            source.PlayOneShot(clip);
-        }
+        SetupSliceComponent(upperHull);
+        SetupSliceComponent(lowerHull);
+
+        Destroy(target);
+        scoreValue++;
+        score.text = "score = " + scoreValue;
+        source.PlayOneShot(clip);
     }
 
-    public void SetupSliceComponent(GameObject slicedObject)
+    private void SetupSliceComponent(GameObject slicedObject)
     {
-        Rigidbody rb = slicedObject.AddComponent<Rigidbody>();
-        MeshCollider collider = slicedObject.AddComponent<MeshCollider>();
+        var rb       = slicedObject.AddComponent<Rigidbody>();
+        var collider = slicedObject.AddComponent<MeshCollider>();
+        
         collider.convex = true;
         rb.AddExplosionForce(cutForce, slicedObject.transform.position, 1);
     }

@@ -1,49 +1,49 @@
 using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class Spawner : MonoBehaviour
 {
-    public GameObject objectToGenerate; // 要生成的物件
-    public float flyingSpeed = 10f; // 飛行速度
-    public float generationInterval; // 物件生成間隔
-    public float maxRandomOffset = 0.1f; // 最大隨機偏移量
-    public float objectLifetime = 2f; // 物件存活時間
+    public GameObject objectToGenerate;
+    public float      flyingSpeed = 10f;
+    public float      generationInterval;
+    public float      maxRandomOffset = 0.1f;
+    public float      objectLifetime  = 2f;
 
     private float lastGenerationTime;
 
-    void Start()
+    private void Start()
     {
         lastGenerationTime = Time.time;
         generationInterval = Random.Range(1f, 3f);
     }
 
-    void Update()
+    private void Update()
     {
-        if (Time.time - lastGenerationTime >= generationInterval)
-        {
-            GenerateAndFlyObject();
-            lastGenerationTime = Time.time;
-        }
+        if (!(Time.time - lastGenerationTime >= generationInterval))
+            return;
+
+        GenerateAndFlyObject();
+
+        lastGenerationTime = Time.time;
     }
 
-    void GenerateAndFlyObject()
+    private void GenerateAndFlyObject()
     {
-        GameObject newObject = Instantiate(objectToGenerate, transform.position, Quaternion.identity);
-        Rigidbody rb = newObject.GetComponent<Rigidbody>();
+        var newObject = Instantiate(objectToGenerate, transform.position, Quaternion.identity);
+        var rb        = newObject.GetComponent<Rigidbody>();
 
         if (rb != null)
         {
-            Vector3 playerPosition = Camera.main.transform.position; // 玩家的位置
-            Vector3 originalFlyDirection = (playerPosition - transform.position).normalized;
+            var playerPosition       = Camera.main.transform.position; // 玩家的位置
+            var originalFlyDirection = (playerPosition - transform.position).normalized;
 
             // 在每個軸上應用隨機偏移
-            float offsetX = Random.Range(-maxRandomOffset, maxRandomOffset);
-            float offsetY = Random.Range(-maxRandomOffset, maxRandomOffset);
-            float offsetZ = Random.Range(-maxRandomOffset, maxRandomOffset);
+            var offsetX = Random.Range(-maxRandomOffset, maxRandomOffset);
+            var offsetY = Random.Range(-maxRandomOffset, maxRandomOffset);
+            var offsetZ = Random.Range(-maxRandomOffset, maxRandomOffset);
 
-            Vector3 randomOffset = new Vector3(offsetX, offsetY, offsetZ);
-            Vector3 newFlyDirection = originalFlyDirection + randomOffset;
+            var randomOffset    = new Vector3(offsetX, offsetY, offsetZ);
+            var newFlyDirection = originalFlyDirection + randomOffset;
 
             // 正規化新方向以保持為單位向量
             newFlyDirection.Normalize();
@@ -59,9 +59,10 @@ public class Spawner : MonoBehaviour
         }
     }
 
-    IEnumerator DestroyObjectAfterDelay(GameObject obj, float delay)
+    private static IEnumerator DestroyObjectAfterDelay(Object obj, float delay)
     {
         yield return new WaitForSeconds(delay);
+
         Destroy(obj);
     }
 }

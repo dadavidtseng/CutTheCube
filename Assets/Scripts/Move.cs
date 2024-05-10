@@ -1,10 +1,8 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class Move : MonoBehaviour
 {
-    public float speed = 2.0f;
+    public float speed    = 2.0f;
     public float distance = 5.0f;
 
     private Vector3 startPosition;
@@ -15,9 +13,10 @@ public class Move : MonoBehaviour
     }
 
     // Update is called once per frame
-    void Update()
+    private void Update()
     {
-        float delta = Mathf.Sin(Time.time * speed) * distance;
+        var delta = Mathf.Sin(Time.time * speed) * distance;
+        
         transform.position = startPosition + Vector3.forward * delta;
     }
 }
