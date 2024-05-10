@@ -3,11 +3,11 @@ using UnityEngine;
 
 public class Spawner : MonoBehaviour
 {
-    public GameObject objectToGenerate;
-    public float      flyingSpeed = 10f;
-    public float      generationInterval;
-    public float      maxRandomOffset = 0.1f;
-    public float      objectLifetime  = 2f;
+    [SerializeField] private GameObject objectToGenerate;
+    [SerializeField] private float      flyingSpeed = 10f;
+    [SerializeField] private float      generationInterval;
+    [SerializeField] private float      maxRandomOffset = 0.1f;
+    [SerializeField] private float      objectLifetime  = 2f;
 
     private float lastGenerationTime;
 

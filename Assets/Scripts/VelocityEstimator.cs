@@ -10,151 +10,155 @@ using System.Collections;
 //-------------------------------------------------------------------------
 public class VelocityEstimator : MonoBehaviour
 {
-	[Tooltip( "How many frames to average over for computing velocity" )]
-	public int velocityAverageFrames = 5;
-	[Tooltip( "How many frames to average over for computing angular velocity" )]
-	public int angularVelocityAverageFrames = 11;
+    [Tooltip("How many frames to average over for computing velocity")]
+    public int velocityAverageFrames = 5;
 
-	public bool estimateOnAwake = false;
+    [Tooltip("How many frames to average over for computing angular velocity")]
+    public int angularVelocityAverageFrames = 11;
 
-	private Coroutine routine;
-	private int sampleCount;
-	private Vector3[] velocitySamples;
-	private Vector3[] angularVelocitySamples;
+    public bool estimateOnAwake = false;
 
-	
-	//-------------------------------------------------
-	private void BeginEstimatingVelocity()
-	{
-		FinishEstimatingVelocity();
+    private Coroutine routine;
+    private int       sampleCount;
+    private Vector3[] velocitySamples;
+    private Vector3[] angularVelocitySamples;
 
-		routine = StartCoroutine( EstimateVelocityCoroutine() );
-	}
+    //-------------------------------------------------
+    private void BeginEstimatingVelocity()
+    {
+        FinishEstimatingVelocity();
 
+        routine = StartCoroutine(EstimateVelocityCoroutine());
+    }
 
-	//-------------------------------------------------
-	private void FinishEstimatingVelocity()
-	{
-		if ( routine != null )
-		{
-			StopCoroutine( routine );
-			routine = null;
-		}
-	}
+    //-------------------------------------------------
+    private void FinishEstimatingVelocity()
+    {
+        if (routine == null) 
+            return;
+        
+        StopCoroutine(routine);
+        
+        routine = null;
+    }
+    
+    //-------------------------------------------------
+    public Vector3 GetVelocityEstimate()
+    {
+        // Compute average velocity
+        var velocity            = Vector3.zero;
+        var velocitySampleCount = Mathf.Min(sampleCount, velocitySamples.Length);
 
+        if (velocitySampleCount == 0)
+            return velocity;
 
-	//-------------------------------------------------
-	public Vector3 GetVelocityEstimate()
-	{
-		// Compute average velocity
-		Vector3 velocity = Vector3.zero;
-		int velocitySampleCount = Mathf.Min( sampleCount, velocitySamples.Length );
-		if ( velocitySampleCount != 0 )
-		{
-			for ( int i = 0; i < velocitySampleCount; i++ )
-			{
-				velocity += velocitySamples[i];
-			}
-			velocity *= ( 1.0f / velocitySampleCount );
-		}
+        for (var i = 0; i < velocitySampleCount; i++)
+            velocity += velocitySamples[i];
 
-		return velocity;
-	}
+        velocity *= (1.0f / velocitySampleCount);
 
+        return velocity;
+    }
 
-	//-------------------------------------------------
-	public Vector3 GetAngularVelocityEstimate()
-	{
-		// Compute average angular velocity
-		Vector3 angularVelocity = Vector3.zero;
-		int angularVelocitySampleCount = Mathf.Min( sampleCount, angularVelocitySamples.Length );
-		if ( angularVelocitySampleCount != 0 )
-		{
-			for ( int i = 0; i < angularVelocitySampleCount; i++ )
-			{
-				angularVelocity += angularVelocitySamples[i];
-			}
-			angularVelocity *= ( 1.0f / angularVelocitySampleCount );
-		}
+    //-------------------------------------------------
+    public Vector3 GetAngularVelocityEstimate()
+    {
+        // Compute average angular velocity
+        var angularVelocity            = Vector3.zero;
+        var angularVelocitySampleCount = Mathf.Min(sampleCount, angularVelocitySamples.Length);
 
-		return angularVelocity;
-	}
+        if (angularVelocitySampleCount == 0)
+            return angularVelocity;
 
+        for (var i = 0; i < angularVelocitySampleCount; i++)
+        {
+            angularVelocity += angularVelocitySamples[i];
+        }
 
-	//-------------------------------------------------
-	public Vector3 GetAccelerationEstimate()
-	{
-		Vector3 average = Vector3.zero;
-		for ( int i = 2 + sampleCount - velocitySamples.Length; i < sampleCount; i++ )
-		{
-			if ( i < 2 )
-				continue;
+        angularVelocity *= (1.0f / angularVelocitySampleCount);
 
-			int first = i - 2;
-			int second = i - 1;
+        return angularVelocity;
+    }
 
-			Vector3 v1 = velocitySamples[first % velocitySamples.Length];
-			Vector3 v2 = velocitySamples[second % velocitySamples.Length];
-			average += v2 - v1;
-		}
-		average *= ( 1.0f / Time.deltaTime );
-		return average;
-	}
+    //-------------------------------------------------
+    public Vector3 GetAccelerationEstimate()
+    {
+        var average = Vector3.zero;
 
+        for (var i = 2 + sampleCount - velocitySamples.Length; i < sampleCount; i++)
+        {
+            if (i < 2)
+                continue;
 
-	//-------------------------------------------------
-	void Awake()
-	{
-		velocitySamples = new Vector3[velocityAverageFrames];
-		angularVelocitySamples = new Vector3[angularVelocityAverageFrames];
+            var first  = i - 2;
+            var second = i - 1;
+            var v1     = velocitySamples[first  % velocitySamples.Length];
+            var v2     = velocitySamples[second % velocitySamples.Length];
 
-		if ( estimateOnAwake )
-		{
-			BeginEstimatingVelocity();
-		}
-	}
+            average += v2 - v1;
+        }
+
+        average *= (1.0f / Time.deltaTime);
+
+        return average;
+    }
 
 
-	//-------------------------------------------------
-	private IEnumerator EstimateVelocityCoroutine()
-	{
-		sampleCount = 0;
+    //-------------------------------------------------
+    private void Awake()
+    {
+        velocitySamples        = new Vector3[velocityAverageFrames];
+        angularVelocitySamples = new Vector3[angularVelocityAverageFrames];
 
-		Vector3 previousPosition = transform.position;
-		Quaternion previousRotation = transform.rotation;
-		while ( true )
-		{
-			yield return new WaitForEndOfFrame();
+        if (!estimateOnAwake)
+            return;
 
-			float velocityFactor = 1.0f / Time.deltaTime;
+        BeginEstimatingVelocity();
+    }
 
-			int v = sampleCount % velocitySamples.Length;
-			int w = sampleCount % angularVelocitySamples.Length;
-			sampleCount++;
 
-			// Estimate linear velocity
-			velocitySamples[v] = velocityFactor * ( transform.position - previousPosition );
+    //-------------------------------------------------
+    private IEnumerator EstimateVelocityCoroutine()
+    {
+        sampleCount = 0;
 
-			// Estimate angular velocity
-			Quaternion deltaRotation = transform.rotation * Quaternion.Inverse( previousRotation );
+        var previousPosition = transform.position;
+        var previousRotation = transform.rotation;
 
-			float theta = 2.0f * Mathf.Acos( Mathf.Clamp( deltaRotation.w, -1.0f, 1.0f ) );
-			if ( theta > Mathf.PI )
-			{
-				theta -= 2.0f * Mathf.PI;
-			}
+        while (true)
+        {
+            yield return new WaitForEndOfFrame();
 
-			Vector3 angularVelocity = new Vector3( deltaRotation.x, deltaRotation.y, deltaRotation.z );
-			if ( angularVelocity.sqrMagnitude > 0.0f )
-			{
-				angularVelocity = theta * velocityFactor * angularVelocity.normalized;
-			}
+            var velocityFactor = 1.0f / Time.deltaTime;
 
-			angularVelocitySamples[w] = angularVelocity;
+            var v = sampleCount % velocitySamples.Length;
+            var w = sampleCount % angularVelocitySamples.Length;
+            sampleCount++;
 
-			previousPosition = transform.position;
-			previousRotation = transform.rotation;
-		}
-	}
+            // Estimate linear velocity
+            velocitySamples[v] = velocityFactor * (transform.position - previousPosition);
+
+            // Estimate angular velocity
+            var deltaRotation = transform.rotation * Quaternion.Inverse(previousRotation);
+
+            var theta = 2.0f * Mathf.Acos(Mathf.Clamp(deltaRotation.w, -1.0f, 1.0f));
+
+            if (theta > Mathf.PI)
+            {
+                theta -= 2.0f * Mathf.PI;
+            }
+
+            var angularVelocity = new Vector3(deltaRotation.x, deltaRotation.y, deltaRotation.z);
+
+            if (angularVelocity.sqrMagnitude > 0.0f)
+            {
+                angularVelocity = theta * velocityFactor * angularVelocity.normalized;
+            }
+
+            angularVelocitySamples[w] = angularVelocity;
+
+            previousPosition = transform.position;
+            previousRotation = transform.rotation;
+        }
+    }
 }
-
