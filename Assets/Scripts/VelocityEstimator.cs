@@ -7,8 +7,6 @@
 using UnityEngine;
 using System.Collections;
 
-
-
 //-------------------------------------------------------------------------
 public class VelocityEstimator : MonoBehaviour
 {
@@ -26,7 +24,7 @@ public class VelocityEstimator : MonoBehaviour
 
 	
 	//-------------------------------------------------
-	public void BeginEstimatingVelocity()
+	private void BeginEstimatingVelocity()
 	{
 		FinishEstimatingVelocity();
 
@@ -35,7 +33,7 @@ public class VelocityEstimator : MonoBehaviour
 
 
 	//-------------------------------------------------
-	public void FinishEstimatingVelocity()
+	private void FinishEstimatingVelocity()
 	{
 		if ( routine != null )
 		{
